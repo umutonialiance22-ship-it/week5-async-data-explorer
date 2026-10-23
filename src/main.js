@@ -1,60 +1,165 @@
-import './style.css'
-import heroImg from './assets/hero.png'
-import javascriptLogo from './assets/javascript.svg'
-import viteLogo from './assets/vite.svg'
-import { setupCounter } from './counter.js'
 
-document.querySelector('#app').innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${javascriptLogo}" class="framework" alt="JavaScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.js</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+import "./style.css";
 
-<div class="ticks"></div>
+import {
+  getProducts,
+  getCategories,
+  getProduct,
+} from "./api.js";
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-          <img class="button-icon" src="${javascriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+import {
+  render,
+  renderProductDetails,
+} from "./render.js";
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+// One state object stores the application's current data and selections.
+const state = {
+  items: [],
+  categories: [],
+  status: "loading",
+  error: null,
+  query: "",
+  filter: "all",
+  sort: "default",
+};
 
-setupCounter(document.querySelector('#counter'))
+let searchTimer;
+
+// Load the initial product list and categories in parallel.
+async function load() {
+  state.status = "loading";
+  state.error = null;
+  render(state);
+
+  try {
+    // Both independent requests begin together.
+    const [productData, categoryData] = await Promise.all([
+      getProducts(),
+      getCategories(),
+    ]);
+
+    state.items = productData.products ?? [];
+
+    // Normalize categories into objects with slug and name.
+    state.categories = categoryData.map((category) => {
+      if (typeof category === "string") {
+        return {
+          slug: category,
+          name: category,
+        };
+      }
+
+      return {
+        slug: category.slug,
+        name: category.name ?? category.slug,
+      };
+    });
+
+    state.status = "success";
+  } catch (error) {
+    state.status = "error";
+    state.error = error.message;
+  } finally {
+    // Always update the interface after loading finishes.
+    render(state);
+  }
+}
+
+// Fetch the full information for one selected product.
+async function openProductDetails(id) {
+  const button = document.querySelector(
+    `[data-product-id="${CSS.escape(String(id))}"]`
+  );
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Loading details...";
+  }
+
+  try {
+    const product = await getProduct(id);
+    renderProductDetails(product);
+  } catch (error) {
+    window.alert(
+      `Could not load product details: ${error.message}`
+    );
+  } finally {
+    // Restore the button if it still exists in the page.
+    const currentButton = document.querySelector(
+      `[data-product-id="${CSS.escape(String(id))}"]`
+    );
+
+    if (currentButton) {
+      currentButton.disabled = false;
+      currentButton.textContent = "View details";
+    }
+  }
+}
+
+// Use event delegation so buttons still work after re-rendering.
+document.querySelector("#app").addEventListener("click", (event) => {
+  const retryButton = event.target.closest("#retry-button");
+
+  if (retryButton) {
+    load();
+    return;
+  }
+
+  const productButton = event.target.closest("[data-product-id]");
+
+  if (productButton) {
+    openProductDetails(productButton.dataset.productId);
+    return;
+  }
+
+  const closeButton = event.target.closest("#close-dialog");
+
+  if (closeButton) {
+    document.querySelector("#product-dialog")?.close();
+  }
+});
+
+// Search updates state and waits 300ms after typing stops.
+// This is our bonus feature: debounced search.
+document.querySelector("#app").addEventListener("input", (event) => {
+  if (event.target.id !== "search-input") return;
+
+  state.query = event.target.value;
+
+  clearTimeout(searchTimer);
+
+  searchTimer = setTimeout(() => {
+    const input = document.querySelector("#search-input");
+    const cursorPosition = input?.selectionStart;
+
+    render(state);
+
+    // Keep focus in the search box after rendering.
+    const nextInput = document.querySelector("#search-input");
+
+    if (nextInput) {
+      nextInput.focus();
+
+      if (cursorPosition !== null && cursorPosition !== undefined) {
+        nextInput.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    }
+  }, 300);
+});
+
+// Category and sorting changes update state and re-render.
+// No new API requests are needed.
+document.querySelector("#app").addEventListener("change", (event) => {
+  if (event.target.id === "category-filter") {
+    state.filter = event.target.value;
+    render(state);
+  }
+
+  if (event.target.id === "sort-select") {
+    state.sort = event.target.value;
+    render(state);
+  }
+});
+
+// Start the application automatically.
+load();
