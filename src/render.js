@@ -50,6 +50,7 @@ export function getVisibleItems({ items, query, filter, sort }) {
 }
 
 // Create a card for each product.
+
 function productCard(product) {
   const {
     id,
@@ -59,49 +60,79 @@ function productCard(product) {
     rating,
     brand,
     availabilityStatus,
+    thumbnail,
   } = product;
 
-  return `
-    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-      <div class="mb-4 flex items-start justify-between gap-3">
-        <span class="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold capitalize text-teal-800">
-          ${escapeHTML(category)}
-        </span>
+  const image = thumbnail || product.images?.[0] || "";
 
-        <span class="text-sm font-semibold text-amber-600">
-          ★ ${escapeHTML(rating ?? "N/A")}
-        </span>
+  return `
+    <article class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+
+      <div class="relative flex h-56 items-center justify-center overflow-hidden bg-slate-100 p-4">
+        ${
+          image
+            ? `
+              <img
+                src="${escapeHTML(image)}"
+                alt="${escapeHTML(title)}"
+                loading="lazy"
+                class="h-full w-full object-contain transition duration-300 group-hover:scale-105"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+              />
+              <div class="hidden h-full w-full items-center justify-center text-sm text-slate-500">
+                Image unavailable
+              </div>
+            `
+            : `
+              <div class="flex h-full w-full items-center justify-center text-sm text-slate-500">
+                No product image available
+              </div>
+            `
+        }
       </div>
 
-      <h3 class="mb-2 text-lg font-bold text-slate-900">
-        ${escapeHTML(title)}
-      </h3>
+      <div class="p-5">
+        <div class="mb-3 flex items-center justify-between gap-2">
+          <span class="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold capitalize text-teal-800">
+            ${escapeHTML(category)}
+          </span>
 
-      <p class="mb-4 text-sm text-slate-500">
-        ${escapeHTML(brand || "Brand not listed")}
-      </p>
+          <span class="text-sm font-semibold text-amber-600">
+            ★ ${escapeHTML(rating ?? "N/A")}
+          </span>
+        </div>
 
-      <div class="mb-5 flex items-end justify-between gap-3">
-        <p class="text-2xl font-bold text-teal-700">
-          $${escapeHTML(Number(price).toFixed(2))}
+        <h3 class="mb-2 line-clamp-2 min-h-12 text-lg font-bold text-slate-900">
+          ${escapeHTML(title)}
+        </h3>
+
+        <p class="mb-4 text-sm text-slate-500">
+          ${escapeHTML(brand || "Brand not listed")}
         </p>
 
-        <span class="text-xs text-slate-500">
-          ${escapeHTML(availabilityStatus ?? "Availability unknown")}
-        </span>
-      </div>
+        <div class="mb-5 flex items-center justify-between gap-2">
+          <p class="text-2xl font-bold text-teal-700">
+            $${escapeHTML(Number(price).toFixed(2))}
+          </p>
 
-      <button
-        type="button"
-        class="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-teal-800"
-        data-product-id="${escapeHTML(id)}"
-        aria-label="View details for ${escapeHTML(title)}"
-      >
-        View details
-      </button>
+          <span class="text-xs text-slate-500">
+            ${escapeHTML(availabilityStatus ?? "Availability unknown")}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          class="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-teal-800"
+          data-product-id="${escapeHTML(id)}"
+          aria-label="View details for ${escapeHTML(title)}"
+        >
+          View details
+        </button>
+      </div>
     </article>
   `;
 }
+
 
 // Display the initial loading state.
 function renderLoading() {
@@ -203,6 +234,29 @@ function renderProducts(state) {
 
   return `
     <section class="mb-8">
+    
+<div class="mb-10 overflow-hidden rounded-3xl bg-slate-900 px-6 py-10 text-white sm:px-10 sm:py-14">
+  <p class="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-teal-300">
+    Discover something new
+  </p>
+
+  <h1 class="max-w-2xl text-4xl font-black tracking-tight sm:text-5xl">
+    Your next favorite find starts here.
+  </h1>
+
+  <p class="mt-4 max-w-xl leading-7 text-slate-300">
+    Explore our collection, compare prices, and find products
+    that fit your style and budget.
+  </p>
+
+  <a
+    href="#catalogue"
+    class="mt-7 inline-block rounded-xl bg-teal-400 px-6 py-3 font-bold text-slate-950 transition hover:bg-teal-300"
+  >
+    Explore products
+  </a>
+</div>
+
       <div class="mb-6">
         <p class="mb-2 text-sm font-bold uppercase tracking-widest text-teal-700">
           Week 5 · Async JavaScript
@@ -349,20 +403,37 @@ export function renderProductDetails(product) {
   if (!dialog || !content) return;
 
   const {
-    title,
-    description,
-    category,
-    price,
-    rating,
-    brand,
-    stock,
-    warrantyInformation,
-    shippingInformation,
-    availabilityStatus,
-  } = product;
+  title,
+  description,
+  category,
+  price,
+  rating,
+  brand,
+  stock,
+  warrantyInformation,
+  shippingInformation,
+  availabilityStatus,
+  thumbnail,
+  images,
+} = product;
+
+const image = thumbnail || images?.[0] || "";
 
   content.innerHTML = `
     <div class="flex items-start justify-between gap-4">
+    ${
+  image
+    ? `
+      <div class="my-5 flex h-64 items-center justify-center rounded-2xl bg-slate-100 p-5">
+        <img
+          src="${escapeHTML(image)}"
+          alt="${escapeHTML(title)}"
+          class="h-full w-full object-contain"
+        />
+      </div>
+    `
+    : ""
+}
       <div>
         <p class="mb-2 text-sm font-semibold uppercase tracking-wide text-teal-700">
           ${escapeHTML(category)}
