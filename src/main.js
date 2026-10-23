@@ -12,7 +12,6 @@ import {
   renderProductDetails,
 } from "./render.js";
 
-// One state object stores the application's current data and selections.
 const state = {
   items: [],
   categories: [],
@@ -25,83 +24,81 @@ const state = {
 
 let searchTimer;
 
-// Load the initial product list and categories in parallel.
 async function load() {
   state.status = "loading";
   state.error = null;
   render(state);
 
   try {
-    // Both independent requests begin together.
-    const [productData, categoryData] = await Promise.all([
+    const [products, apiCategories] = await Promise.all([
       getProducts(),
       getCategories(),
     ]);
 
-    state.items = productData.products ?? [];
+    if (!Array.isArray(products)) {
+      throw new Error("The product API returned invalid data.");
+    }
 
-    // Normalize categories into objects with slug and name.
-    state.categories = categoryData.map((category) => {
-      if (typeof category === "string") {
-        return {
-          slug: category,
-          name: category,
-        };
-      }
+    state.items = products.slice(0, 100);
 
-      return {
-        slug: category.slug,
-        name: category.name ?? category.slug,
-      };
-    });
+    state.categories = [
+      ...new Set(
+        state.items
+          .map((product) => product.category)
+          .filter(Boolean)
+      ),
+    ];
 
-    state.status = "success";
+    state.status = state.items.length ? "success" : "empty";
+    state.error = null;
+
+    console.log("Products loaded:", state.items.length);
+    console.log("API categories:", apiCategories.length);
   } catch (error) {
     state.status = "error";
-    state.error = error.message;
+    state.error = error.message || "Unable to load products.";
   } finally {
-    // Always update the interface after loading finishes.
     render(state);
   }
 }
 
-// Fetch the full information for one selected product.
 async function openProductDetails(id) {
   const button = document.querySelector(
     `[data-product-id="${CSS.escape(String(id))}"]`
   );
 
+  const originalText = button?.textContent;
+
   if (button) {
     button.disabled = true;
-    button.textContent = "Loading details...";
+    button.textContent = "Loading...";
   }
 
   try {
     const product = await getProduct(id);
     renderProductDetails(product);
   } catch (error) {
-    window.alert(
-      `Could not load product details: ${error.message}`
-    );
+    window.alert(`Could not load product: ${error.message}`);
   } finally {
-    // Restore the button if it still exists in the page.
     const currentButton = document.querySelector(
       `[data-product-id="${CSS.escape(String(id))}"]`
     );
 
     if (currentButton) {
       currentButton.disabled = false;
-      currentButton.textContent = "View details";
+      currentButton.textContent = originalText || "View details";
     }
   }
 }
 
-// Use event delegation so buttons still work after re-rendering.
 document.querySelector("#app").addEventListener("click", (event) => {
-  const retryButton = event.target.closest("#retry-button");
-
-  if (retryButton) {
+  if (event.target.closest("#retry-button")) {
     load();
+    return;
+  }
+
+  if (event.target.closest("#close-dialog")) {
+    document.querySelector("#product-dialog")?.close();
     return;
   }
 
@@ -109,18 +106,9 @@ document.querySelector("#app").addEventListener("click", (event) => {
 
   if (productButton) {
     openProductDetails(productButton.dataset.productId);
-    return;
-  }
-
-  const closeButton = event.target.closest("#close-dialog");
-
-  if (closeButton) {
-    document.querySelector("#product-dialog")?.close();
   }
 });
 
-// Search updates state and waits 300ms after typing stops.
-// This is our bonus feature: debounced search.
 document.querySelector("#app").addEventListener("input", (event) => {
   if (event.target.id !== "search-input") return;
 
@@ -130,25 +118,22 @@ document.querySelector("#app").addEventListener("input", (event) => {
 
   searchTimer = setTimeout(() => {
     const input = document.querySelector("#search-input");
-    const cursorPosition = input?.selectionStart;
+    const position = input?.selectionStart;
 
     render(state);
 
-    // Keep focus in the search box after rendering.
     const nextInput = document.querySelector("#search-input");
 
     if (nextInput) {
       nextInput.focus();
 
-      if (cursorPosition !== null && cursorPosition !== undefined) {
-        nextInput.setSelectionRange(cursorPosition, cursorPosition);
+      if (position !== null && position !== undefined) {
+        nextInput.setSelectionRange(position, position);
       }
     }
   }, 300);
 });
 
-// Category and sorting changes update state and re-render.
-// No new API requests are needed.
 document.querySelector("#app").addEventListener("change", (event) => {
   if (event.target.id === "category-filter") {
     state.filter = event.target.value;
@@ -161,5 +146,4 @@ document.querySelector("#app").addEventListener("change", (event) => {
   }
 });
 
-// Start the application automatically.
 load();

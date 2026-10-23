@@ -24,7 +24,7 @@ allows users to search, filter, sort, and inspect products.
 
 - GitHub repository: https://github.com/umutonialiance22-ship-it/week5-async-data-explorer.git
 - Live application: https://week5-async-data-explorer.onrender.com
-- Video demonstration: https://drive.google.com/file/d/1uBp0BpQLKzLu3iYp-g7fj5zwDdOJ817f/view?usp=sharing
+- Video demonstration: 
 
 ## Features
 

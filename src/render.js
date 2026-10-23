@@ -51,6 +51,7 @@ export function getVisibleItems({ items, query, filter, sort }) {
 
 // Create a card for each product.
 
+
 function productCard(product) {
   const {
     id,
@@ -59,79 +60,68 @@ function productCard(product) {
     price,
     rating,
     brand,
-    availabilityStatus,
     thumbnail,
+    images,
   } = product;
 
-  const image = thumbnail || product.images?.[0] || "";
+  const image = product.thumbnail || product.images?.[0] || "";
 
   return `
-    <article class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <article class="group overflow-hidden rounded-2xl border border-[#F0E2E7] bg-white transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-pink-100/70">
 
-      <div class="relative flex h-56 items-center justify-center overflow-hidden bg-slate-100 p-4">
+      <div class="relative flex h-64 items-center justify-center overflow-hidden bg-[#FFF7FA] p-5">
         ${
           image
             ? `
               <img
-                src="${escapeHTML(image)}"
-                alt="${escapeHTML(title)}"
-                loading="lazy"
-                class="h-full w-full object-contain transition duration-300 group-hover:scale-105"
-                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-              />
-              <div class="hidden h-full w-full items-center justify-center text-sm text-slate-500">
-                Image unavailable
-              </div>
+  src="${escapeHTML(image)}"
+  alt="${escapeHTML(title)}"
+  loading="lazy"
+  class="h-full w-full object-contain"
+/>
             `
             : `
-              <div class="flex h-full w-full items-center justify-center text-sm text-slate-500">
-                No product image available
-              </div>
+              <p class="text-sm text-[#9A7C88]">Photo coming soon</p>
             `
         }
+
+        <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-[#9B5974]">
+          ${escapeHTML(category || "New find")}
+        </span>
       </div>
 
-      <div class="p-5">
-        <div class="mb-3 flex items-center justify-between gap-2">
-          <span class="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold capitalize text-teal-800">
-            ${escapeHTML(category)}
-          </span>
+      <div class="p-4 sm:p-5">
+        <p class="mb-2 text-xs uppercase tracking-wider text-[#A47D8D]">
+          ${escapeHTML(brand || "Pink Muse collection")}
+        </p>
 
-          <span class="text-sm font-semibold text-amber-600">
-            ★ ${escapeHTML(rating ?? "N/A")}
-          </span>
-        </div>
-
-        <h3 class="mb-2 line-clamp-2 min-h-12 text-lg font-bold text-slate-900">
+        <h3 class="min-h-12 text-base font-semibold leading-6 text-[#49313B]">
           ${escapeHTML(title)}
         </h3>
 
-        <p class="mb-4 text-sm text-slate-500">
-          ${escapeHTML(brand || "Brand not listed")}
-        </p>
-
-        <div class="mb-5 flex items-center justify-between gap-2">
-          <p class="text-2xl font-bold text-teal-700">
+        <div class="mt-4 flex items-center justify-between gap-3">
+          <p class="text-xl font-bold text-[#C76E91]">
             $${escapeHTML(Number(price).toFixed(2))}
           </p>
 
-          <span class="text-xs text-slate-500">
-            ${escapeHTML(availabilityStatus ?? "Availability unknown")}
+          <span class="text-sm text-[#936F7D]">
+            ★ ${escapeHTML(rating ?? "N/A")}
           </span>
         </div>
 
         <button
           type="button"
-          class="w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-teal-800"
           data-product-id="${escapeHTML(id)}"
           aria-label="View details for ${escapeHTML(title)}"
+          class="mt-5 w-full rounded-full border border-[#D987A4] bg-[#F8DDE5] px-4 py-3 text-sm font-semibold text-[#653B4D] transition hover:bg-[#D987A4] hover:text-white"
         >
-          View details
+          Take a closer look
         </button>
       </div>
     </article>
   `;
 }
+
 
 
 // Display the initial loading state.
@@ -233,44 +223,49 @@ function renderProducts(state) {
     .join("");
 
   return `
-    <section class="mb-8">
+    <section id="catalogue" class="w-full rounded-xl border border-[#E8D5DD] bg-white px-4 py-3 text-sm text-[#49313B] outline-none placeholder:text-[#B69AA6] focus:border-[#D987A4] focus:ring-2 focus:ring-pink-100">
+
     
-<div class="mb-10 overflow-hidden rounded-3xl bg-slate-900 px-6 py-10 text-white sm:px-10 sm:py-14">
-  <p class="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-teal-300">
-    Discover something new
-  </p>
+      <header class="mb-10">
+        <div class="mb-6 flex items-center justify-between gap-4">
+          <a href="#" class="text-2xl font-bold tracking-tight text-[#49313B]">
+            pink muse<span class="text-[#D987A4]">.</span>
+          </a>
 
-  <h1 class="max-w-2xl text-4xl font-black tracking-tight sm:text-5xl">
-    Your next favorite find starts here.
-  </h1>
+          <a
+            href="#catalogue"
+            class="rounded-full border border-[#E8C9D5] bg-white px-5 py-2.5 text-sm font-semibold text-[#75465A] transition hover:bg-[#F8DDE5]"
+          >
+            Shop the edit
+          </a>
+        </div>
 
-  <p class="mt-4 max-w-xl leading-7 text-slate-300">
-    Explore our collection, compare prices, and find products
-    that fit your style and budget.
-  </p>
+        <div class="overflow-hidden rounded-3xl bg-[#F8DDE5] px-6 py-10 sm:px-10 sm:py-14">
+          <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#A75C7B]">
+            A little treat for you
+          </p>
 
-  <a
-    href="#catalogue"
-    class="mt-7 inline-block rounded-xl bg-teal-400 px-6 py-3 font-bold text-slate-950 transition hover:bg-teal-300"
-  >
-    Explore products
-  </a>
-</div>
+          <h1 class="max-w-2xl text-4xl font-semibold leading-tight tracking-tight text-[#49313B] sm:text-6xl">
+            Cute things. Pretty finds. All yours.
+          </h1>
 
-      <div class="mb-6">
-        <p class="mb-2 text-sm font-bold uppercase tracking-widest text-teal-700">
-          Week 5 · Async JavaScript
-        </p>
+          <p class="mt-5 max-w-lg text-base leading-7 text-[#765766]">
+            Your little corner for beauty favourites, everyday outfits
+            and things that make you smile.
+          </p>
 
-        <h1 class="text-3xl font-black tracking-tight sm:text-4xl">
-          Product Explorer
-        </h1>
+          <a
+            href="#catalogue"
+            class="mt-7 inline-block rounded-full bg-[#49313B] px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-[#75465A]"
+          >
+            Find your favourite
+          </a>
 
-        <p class="mt-3 max-w-2xl text-slate-600">
-          Explore products, search by name or brand, filter categories,
-          and sort the catalogue.
-        </p>
-      </div>
+          <p class="mt-5 text-xs text-[#8E6476]">
+            A little pink, a little confidence, a lot of you.
+          </p>
+        </div>
+      </header>
 
       <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div>
@@ -358,6 +353,7 @@ function renderProducts(state) {
     </section>
   `;
 }
+
 
 // Render the whole application based on its current state.
 export function render(state) {
